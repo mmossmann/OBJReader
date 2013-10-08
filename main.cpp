@@ -1,0 +1,280 @@
+#include <Windows.h> 
+#include "camera.h"
+#include "Reader.h"
+#include <stdio.h> 
+#include <string.h>
+#include <GL/gl.h> 
+#include <GL/glut.h>
+  
+using namespace std;
+
+int width = 800, height = 600;
+
+bool typeMode = false;
+
+string objName = "exemplosOBJ\\torreDiPisa.obj";
+
+Mesh* mesh;
+
+Camera* camera;
+
+int currentTime, frames = 0, timebase;
+
+char s[20];
+
+
+void calculeFps(){
+	frames++;
+
+	if (currentTime - timebase > 1000) {
+		timebase = currentTime;
+		frames = 0;
+	}
+}
+
+void switch2D(void){
+	//Switch to 2D
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, width, 0, height, 0, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glDisable(GL_LIGHTING);
+}
+
+void display2d(const char* msg, float x, float y, float l_size, void* font){		
+	for(unsigned int i=0;i<strlen(msg);++i){
+		glRasterPos2f(x, y);
+		glutBitmapCharacter(font, msg[i]);
+		x += l_size;
+	}
+}
+
+void drawScene(){ 
+    // Clear the window with current clearing color 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+
+
+	/*Floor
+	glColor3f(0, 0, 1);
+	glBegin(GL_QUADS);
+
+	glVertex3f(-50,-1,-50);
+	glVertex3f(50,-1,-50);
+	glVertex3f(50,-1,50);
+	glVertex3f(-50,-1,50);
+
+	glEnd();*/
+	
+	mesh->render();
+	
+	switch2D();
+	//Draw 2D stuff
+	currentTime = glutGet(GLUT_ELAPSED_TIME);
+	glColor3f(0.0f,1.0f,1.0f);
+	sprintf(s,"FPS: %4.2f", frames*1000.0/(currentTime-timebase));
+	display2d(s, 0, 0, 20, GLUT_BITMAP_TIMES_ROMAN_24);
+
+	if(typeMode){
+		glColor3f(1.0f, 0.0f ,1.0f);
+		display2d(objName.c_str(), 0, height / 2, 20, GLUT_BITMAP_TIMES_ROMAN_24);
+	}
+
+	//Go back to 3D
+	camera->resetView(width, height);
+	glEnable(GL_LIGHTING);
+	
+	
+    //Buffer swap
+	glutSwapBuffers();
+    glFlush();
+} 
+
+void handleKeypress(unsigned char key, int x, int y) {
+	if(key == 27){//escape
+		exit(0);
+	}
+	else
+		if(typeMode){
+			//Vertex* vx;
+			switch(key){
+				case 8://backspace
+					if(objName.size())
+						objName.pop_back();
+					break;
+				case 13://enter
+					mesh = new Mesh();
+					Reader::readObj(objName.c_str(), mesh);
+					typeMode = false;	
+					break;
+				default:
+					objName += key;
+			}
+	} else {
+		switch(key){
+			case 'a':
+			case 'A':
+				camera->moveSide(1);
+				break;
+			case 's':
+			case 'S':
+				camera->move(-1);
+				break;
+			case 'd':
+			case 'D':
+				camera->moveSide(-1);
+				break;
+			case 'w':
+			case 'W':
+				camera->move(1);
+				break;
+		}
+		glutPostRedisplay();
+	}
+}
+
+void handleSpecialKey(int key, int x, int y){	
+
+	switch(key){
+		case GLUT_KEY_F1:
+			if(typeMode){
+				typeMode = false;
+			}else
+				typeMode = true;
+			break;
+		case GLUT_KEY_F2:
+			objName = "exemplosOBJ\\";
+			break;
+		case GLUT_KEY_F3:
+			objName = "exemplosOBJ\\FlorenceBridge\\PonteVecchio.obj";
+			break;
+		case GLUT_KEY_F4:
+			objName = "exemplosOBJ\\LibertyStatue\\LibertStatue.obj";
+			break;
+		case GLUT_KEY_F5:
+			objName = "exemplosOBJ\\torreDiPisa.obj";
+			break;
+	}
+}
+
+void passiveMotionFunc(int x, int y)
+{
+	float y2 = (height - y) / (float)height;
+	if (y2 != 0.5 || x != width/2) 
+	{
+		if(y2 != 0.5)
+		{
+			camera->setDirectionY(y2 - 0.5);
+		}
+		if(x != width/2)
+		{
+			camera->changeAngle((x - width/2) / 10);
+		}
+		glutWarpPointer(width/2, height/2);
+		glutPostRedisplay();
+	}
+}
+
+void handleResize(int w, int h) {
+	if (h < 1) h = 1;
+	width  = w;
+	height = h;
+
+	glutWarpPointer(width/2, height/2);
+
+	// reestabele a visualização
+	camera->resetView(w, h);
+}
+  
+void init() { 
+    // inicia propriedades de cor de fundo 
+	glClearColor(0.0, 0.0, 1.0, 1.0); // cor do fundo 
+	glClearDepth(1.0);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHTING);
+	//glEnable(GL_CULL_FACE);
+	glutSetCursor(GLUT_CURSOR_NONE); 
+
+	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+	GLfloat light_specular[] = {1.0, 1.0, 0.0,1.0};
+	GLfloat light_diffuse[] = {1.0, 1.0, 1.0,1.0};
+	/*GLfloat mat_specular[] = { 0.8, 0.5, 0.5, 1.0 };
+	GLfloat mat_shininess[] = { 20.0 };
+	GLfloat mat_ambient[] = { 0.9, 0.0, 0.0, 1.0 };
+	GLfloat mat_diffuse[] = { 0.0, 0.0, 0.0, 1.0 };
+	*/glShadeModel (GL_SMOOTH);
+/*
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);*/
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+
+	camera = new Camera(90);
+
+	camera->resetView(width, height);
+
+	mesh = new Mesh();
+	Reader::readObj("exemplosOBJ\\teapot1.obj", mesh);
+	
+	/*
+	glEnableClientState(GL_VERTEX_ARRAY);
+	Vertex* vx = new Vertex[mesh->getVerts().size()];
+	Vertex* vt = mesh->getVerts().data();
+	for(int x = 0; x < mesh->getVerts().size(); ++x){
+		vx[x] =  mesh->getVerts()[x];
+		if(vt[x].getCoords()[0] != vx[x].getCoords()[0] | vt[x].getCoords()[1] != vx[x].getCoords()[1] | vt[x].getCoords()[2] != vx[x].getCoords()[2]){
+			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[0]<<"\tFor: "<<vx[x].getCoords()[0]<<endl;
+			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[1]<<"\tFor: "<<vx[x].getCoords()[1]<<endl;
+			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[2]<<"\tFor: "<<vx[x].getCoords()[2]<<endl;
+		}
+	}
+	cout<<"Sizeof(vt) :"<<sizeof(*vt)<<endl;
+	cout<<"Sizeof(vx) :"<<sizeof(vx)<<endl;
+	cout<<"Sizeof(Vertex) :"<<sizeof(Vertex)<<endl;
+	cout<<"mesh->getVerts().size() :"<<mesh->getVerts().size()<<endl;
+	
+	glVertexPointer(3, GL_FLOAT, sizeof(Vertex), vx);
+	/**/
+	
+	timebase = glutGet(GLUT_ELAPSED_TIME);
+
+} 
+
+void idle()
+{
+	currentTime = glutGet(GLUT_ELAPSED_TIME);
+	calculeFps();	
+	glutPostRedisplay();
+}
+  
+int main(int argc, char** argv) { 
+  
+   	// inicializa glut 
+	glutInit(&argc, argv); 
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); 
+	glutInitWindowSize(width, height);
+  
+	// cria janela 
+	glutCreateWindow("exemplo de visualização de objetos");  
+	//glutFullScreen();
+	init(); 
+  
+	// seta funções
+	glutDisplayFunc(drawScene);
+	glutReshapeFunc(handleResize);
+	glutKeyboardFunc(handleKeypress);
+	glutSpecialFunc(handleSpecialKey);
+
+	glutPassiveMotionFunc(passiveMotionFunc);
+
+	glutIdleFunc(idle);
+  
+   	glutMainLoop(); 
+  
+   	return 0; 
+} 
