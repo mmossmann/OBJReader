@@ -8,6 +8,8 @@
   
 using namespace std;
 
+#define BUFSIZE 1024
+
 int width = 800, height = 600;
 
 bool typeMode = false;
@@ -22,6 +24,35 @@ int currentTime, frames = 0, timebase;
 
 char s[20];
 
+void processHits (GLint hits, GLuint buffer[])
+{
+   unsigned int i, j;
+   GLuint names, *ptr, minZ,*ptrNames, numberOfNames;
+
+   printf ("hits = %d\n", hits);
+   ptr = (GLuint *) buffer;
+   minZ = 0xffffffff;
+   for (i = 0; i < hits; i++) {	
+      names = *ptr;
+	  ptr++;
+	  if (*ptr < minZ) {
+		  numberOfNames = names;
+		  minZ = *ptr;
+		  ptrNames = ptr+2;
+	  }
+	  
+	  ptr += names+2;
+	}
+  printf ("The closest hit names are ");
+  ptr = ptrNames;
+  mesh->getGroupAt(*ptr)->setVisible(false);
+  for (j = 0; j < numberOfNames; j++,ptr++) {
+     printf ("%d ", *ptr);
+  }
+  printf ("\n");
+  cout<<"Groups: "<<mesh->getGroups().size()<<endl;
+   
+}
 
 void calculeFps(){
 	frames++;
@@ -78,7 +109,7 @@ void drawScene(){
 
 	if(typeMode){
 		glColor3f(1.0f, 0.0f ,1.0f);
-		display2d(objName.c_str(), 0, height / 2, 20, GLUT_BITMAP_TIMES_ROMAN_24);
+		display2d(objName.c_str(), 0, height / 2, 20, GLUT_BITMAP_HELVETICA_18);
 	}
 
 	//Go back to 3D
@@ -195,7 +226,7 @@ void init() {
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHTING);
 	//glEnable(GL_CULL_FACE);
-	glutSetCursor(GLUT_CURSOR_NONE); 
+	// glutSetCursor(GLUT_CURSOR_NONE); 
 
 	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
 	GLfloat light_specular[] = {1.0, 1.0, 0.0,1.0};
@@ -251,6 +282,46 @@ void idle()
 	calculeFps();	
 	glutPostRedisplay();
 }
+
+void handleMouse(int button, int state, int x, int y){
+
+	if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN)
+      return;
+	  
+   GLuint selectBuf[BUFSIZE];
+   GLint hits;
+   GLint viewport[4];
+	  
+		// startPicking(x, y);
+		// stopPicking();
+		glGetIntegerv (GL_VIEWPORT, viewport);
+
+   glSelectBuffer (BUFSIZE, selectBuf);
+   (void) glRenderMode (GL_SELECT);
+
+   glInitNames();
+   glPushName(0);
+
+   glMatrixMode (GL_PROJECTION);
+   glPushMatrix ();
+   glLoadIdentity ();
+/*  create 5x5 pixel picking region near cursor location      */
+   gluPickMatrix ((GLdouble) x, (GLdouble) (viewport[3] - y), 
+                  5.0, 5.0, viewport);
+	gluPerspective(45.0, width / (double)height, 0.2, 200.0);
+   // drawSquares (GL_SELECT);
+   
+   mesh->render();
+
+   glMatrixMode (GL_PROJECTION);
+   glPopMatrix ();
+   glFlush ();
+
+   hits = glRenderMode (GL_RENDER);
+	if (hits != 0)
+		processHits(hits,selectBuf);
+   glutPostRedisplay();
+}
   
 int main(int argc, char** argv) { 
   
@@ -266,6 +337,7 @@ int main(int argc, char** argv) {
   
 	// seta funções
 	glutDisplayFunc(drawScene);
+	glutMouseFunc(handleMouse);
 	glutReshapeFunc(handleResize);
 	glutKeyboardFunc(handleKeypress);
 	glutSpecialFunc(handleSpecialKey);

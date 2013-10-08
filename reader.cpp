@@ -15,8 +15,6 @@ void Reader::readObj(const char* name, Mesh* m){
 	Texts t;
 	string mtl;
 	
-	bool createGroup = false;
-	
 	in.open(name);
 	
 	if(!in.is_open()){
@@ -27,7 +25,7 @@ void Reader::readObj(const char* name, Mesh* m){
 	while(!in.eof()){
 		getline(in, buffer);
 	
-		tokens = split(buffer, ' ');
+		tokens = split(buffer, ' ', false);
 		
 		switch(buffer[0]){
 			case 'v':
@@ -59,7 +57,7 @@ void Reader::readObj(const char* name, Mesh* m){
 				f = new Face();
 				g->addFace(f);
 				for(unsigned int x = 1; x < tokens.size(); ++x){
-					indexes = split(tokens[x], '/');
+					indexes = split(tokens[x], '/', true);
 					f->addVert(atoi(indexes[0].c_str()) - 1);
 					if(indexes.size() > 1)
 						if(indexes[1].size() > 0)
@@ -71,7 +69,7 @@ void Reader::readObj(const char* name, Mesh* m){
 				
 			case 'g':
 			
-				if(createGroup){
+				if(!g->getFaces().empty()){
 				
 					if(tokens.size() == 1){
 						g = new Group();
@@ -80,8 +78,7 @@ void Reader::readObj(const char* name, Mesh* m){
 						g = new Group(tokens[1]);
 					}
 					m->addGroup(g);
-				}else 
-					createGroup = true;
+				}
 				break;
 				
 			case 'm':
@@ -130,7 +127,7 @@ bool Reader::readMtl(const char* s, Mesh* m){
 	
 		getline(in, buffer);
 		
-		tokens = split(buffer, ' ');
+		tokens = split(buffer, ' ', false);
 		
 		switch(buffer[0]){
 			case 'K':
@@ -180,11 +177,14 @@ bool Reader::readMtl(const char* s, Mesh* m){
 	return true;
 }
 
-vector<string> Reader::split(const string &s, char delim) {
+vector<string> Reader::split(const string &s, char delim, bool empty) {
 	vector<string> elems;
 	stringstream ss(s);
 	string item;
 	while (getline(ss, item, delim)) {
+		if(!empty && item.empty()){
+			continue;
+		}
 		elems.push_back(item);
 	}
 	return elems;

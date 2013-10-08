@@ -9,7 +9,7 @@ using namespace std;
 class Reader
 {
 	private:
-		static vector<string> split(const string &s, char delim);
+		static vector<string> split(const string &s, char delim, bool empty);
 
 	public:
 		static void readObj(const char* name, Mesh* m);

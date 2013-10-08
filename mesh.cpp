@@ -57,8 +57,16 @@ void Mesh::render(void){
 	int glMode = GL_TRIANGLES;
 	int oldSides = 3;
 	
-	glBegin(glMode);
-	for(Group* g : groups){		
+	int name = 0;
+	
+	for(Group* g : groups){	
+	
+		glLoadName(name++);
+		
+		if(!g->getVisible())
+			continue;
+		
+		glBegin(glMode);	
 		
 		string mtlName = g->getMtl();
 		
@@ -105,6 +113,7 @@ void Mesh::render(void){
 				glBegin(GL_POLYGON);
 			}	
 		}
+		//glPopName();
+		glEnd();
 	}
-	glEnd();
 }

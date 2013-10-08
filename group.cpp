@@ -2,10 +2,12 @@
 
 Group::Group(){
 	name = "";
+	visible = true;
 }
 
 Group::Group(string n){
 	name = n;
+	visible = true;
 }
 
 vector<Face*> Group::getFaces(void){
@@ -14,6 +16,10 @@ vector<Face*> Group::getFaces(void){
 
 string Group::getMtl(void){
 	return mtl;
+}
+
+bool Group::getVisible(void){
+	return visible;
 }
 
 void Group::addFace(Face* newFace){
@@ -26,4 +32,8 @@ void Group::setName(string n){
 
 void Group::setMtl(string name){
 	mtl = name;
+}
+
+void Group::setVisible(bool v){
+	visible = v;
 }
