@@ -24,8 +24,12 @@ void Reader::readObj(const char* name, Mesh* m){
 	
 	while(!in.eof()){
 		getline(in, buffer);
+		
+		if(buffer.find('\n') != -1){
+			cout<<buffer<<endl;
+		}
 	
-		tokens = split(buffer, ' ', false);
+		tokens = split(buffer, ' ', true);
 		
 		switch(buffer[0]){
 			case 'v':
@@ -57,7 +61,7 @@ void Reader::readObj(const char* name, Mesh* m){
 				f = new Face();
 				g->addFace(f);
 				for(unsigned int x = 1; x < tokens.size(); ++x){
-					indexes = split(tokens[x], '/', true);
+					indexes = split(tokens[x], '/', false);
 					f->addVert(atoi(indexes[0].c_str()) - 1);
 					if(indexes.size() > 1)
 						if(indexes[1].size() > 0)
@@ -91,6 +95,8 @@ void Reader::readObj(const char* name, Mesh* m){
 		}
 	}
 	
+	in.close();
+	
 	if(mtl.empty()){
 		for(Group* g1 : m->getGroups()){
 			g1->setMtl("");
@@ -114,7 +120,7 @@ bool Reader::readMtl(const char* s, Mesh* m){
 	vector<string> tokens;
 	vector<string> indexes;
 
-	Material mtl;
+	Material* mtl;
 	
 	in.open(s);
 	if(!in.is_open()){
@@ -122,31 +128,35 @@ bool Reader::readMtl(const char* s, Mesh* m){
 		return false;
 	}
 	cout<<"Arquivo aberto com sucesso: "<<s<<endl;
+
+
+	string path(s);
+	path = path.substr(0, path.rfind('\\')) + '\\';
 	
 	while(!in.eof()){
 	
 		getline(in, buffer);
 		
-		tokens = split(buffer, ' ', false);
+		tokens = split(buffer, ' ', true);
 		
 		switch(buffer[0]){
 			case 'K':
 			case 'k':
 				switch(buffer[1]){
 					case 'd':
-						mtl.setDiffuse(
+						mtl->setDiffuse(
 								atof(tokens[1].c_str()), 
 								atof(tokens[2].c_str()), 
 								atof(tokens[3].c_str()));
 						break;
 					case 's':
-						mtl.setSpecular(
+						mtl->setSpecular(
 								atof(tokens[1].c_str()), 
 								atof(tokens[2].c_str()), 
 								atof(tokens[3].c_str()));
 						break;
 					case 'a':
-						mtl.setAmbient(
+						mtl->setAmbient(
 								atof(tokens[1].c_str()), 
 								atof(tokens[2].c_str()), 
 								atof(tokens[3].c_str()));
@@ -158,31 +168,45 @@ bool Reader::readMtl(const char* s, Mesh* m){
 			case 'n':
 				switch(buffer[1]){
 					case 's':
-						mtl.setShininess(atof(tokens[1].c_str()));
+						mtl->setShininess(atof(tokens[1].c_str()));
 						break;
 					case 'e':
+						mtl = new Material(tokens[1]);
 						m->addMats(mtl);
-						mtl = Material(tokens[1]);
 						break;
 				}
 				break;
 				
 			case 'M':
-			case 'm':
-				//TODO ler textura
+			case 'm':					
+				mtl->setTextName(path + tokens[1]);
+				break;
+				
+			case 'D':
+			case 'd':
+				mtl->setD(atof(tokens[1].c_str()));
 				break;
 		}
 	}
 	m->addMats(mtl);
+	
+	in.close();
+	
 	return true;
 }
 
-vector<string> Reader::split(const string &s, char delim, bool empty) {
+Image* Reader::readPpm(const char* s){
+	Image* img = new Image();
+	img->loadPPM(s);
+	return img;
+}
+
+vector<string> Reader::split(const string &s, char delim, bool ignoreEmpty) {
 	vector<string> elems;
 	stringstream ss(s);
 	string item;
 	while (getline(ss, item, delim)) {
-		if(!empty && item.empty()){
+		if(ignoreEmpty && item.empty()){
 			continue;
 		}
 		elems.push_back(item);

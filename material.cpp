@@ -1,11 +1,16 @@
 #include "material.h"
 #include <iostream>
 
+using namespace std;
+
+int Material::textCount = 0;
+
 Material::Material(std::string n){
 	name = n;
-	diffuse[3] = 1;
-	ambient[3] = 1;
-	specular[3] = 1;
+}
+
+int Material::getTextCount(void){
+	return textCount;
 }
 
 std::string Material::getName(void){
@@ -13,19 +18,39 @@ std::string Material::getName(void){
 }
 
 float* Material::getDiffuse(void){
+	// cout<<"Diffuse"<<endl;
+	// cout<<diffuse[0]<<endl;
+	// cout<<diffuse[1]<<endl;
+	// cout<<diffuse[2]<<endl;
 	return diffuse;
 }
 
 float* Material::getAmbient(void){
+	// cout<<"Ambient"<<endl;
+	// cout<<ambient[0]<<endl;
+	// cout<<ambient[1]<<endl;
+	// cout<<ambient[2]<<endl;
 	return ambient;
 }
 
 float* Material::getSpecular(void){
+	// cout<<"Specular"<<endl;
+	// cout<<specular[0]<<endl;
+	// cout<<specular[1]<<endl;
+	// cout<<specular[2]<<endl;
 	return specular;
 }
 
 float Material::getShininess(void){
 	return shininess;
+}
+
+int Material::getID(void){
+	return id;
+}
+
+std::string Material::getTextName(void){
+	return textName;
 }
 
 void Material::setDiffuse(float r, float g, float b){
@@ -48,4 +73,23 @@ void Material::setSpecular(float r, float g, float b){
 
 void Material::setShininess(float n){
 	shininess = n;
+}
+
+void Material::setD(float d){
+	diffuse[3] = d;
+	ambient[3] = d;
+	specular[3] = d;
+}
+
+void Material::setTextName(std::string tn){
+	textName = tn;
+	textCount++;
+}
+
+void Material::setID(int i){
+	id = i;
+}
+
+bool Material::hasText(void){
+	return !textName.empty();
 }

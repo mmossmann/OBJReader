@@ -16,8 +16,8 @@ void Mesh::addTexts(Texts newT){
 	texts.push_back(newT);
 }
 
-void Mesh::addMats(Material newM){
-	string name = newM.getName();
+void Mesh::addMats(Material* newM){
+	string name = newM->getName();
 	if(name.size()){
 		mats[name] = newM;
 	}
@@ -26,8 +26,9 @@ void Mesh::addMats(Material newM){
 vector<Group*> Mesh::getGroups(void){
 	return groups;
 }
+
 Group* Mesh::getGroupAt(int i){
-	return groups.at(i);
+	return groups[i];
 }
 
 vector<Vertex> Mesh::getVerts(void){
@@ -42,17 +43,17 @@ vector<Texts> Mesh::getTexts(void){
 	return texts;
 }
 
-map<string, Material> Mesh::getMats(void){
+map<string, Material*> Mesh::getMats(void){
 	return mats;
 }
 
-Material Mesh::getMtl(string name){
+Material* Mesh::getMtl(string name){
 	return mats[name];
 }
 
 void Mesh::render(void){
-	
-	glColor3f(0.0, 0.8, 0.7);
+
+	glColor3f(1.0, 1.0, 1.0);
 	
 	int glMode = GL_TRIANGLES;
 	int oldSides = 3;
@@ -66,17 +67,22 @@ void Mesh::render(void){
 		if(!g->getVisible())
 			continue;
 		
-		glBegin(glMode);	
-		
 		string mtlName = g->getMtl();
 		
 		if(!mtlName.empty()){
-			Material mtl = getMtl(mtlName);
-			glMaterialfv(GL_FRONT, GL_SPECULAR, mtl.getSpecular());
-			glMaterialfv(GL_FRONT, GL_AMBIENT, mtl.getAmbient());
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, mtl.getDiffuse());
-			glMaterialf(GL_FRONT, GL_SHININESS, mtl.getShininess());
+			Material* mtl = getMtl(mtlName);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, mtl->getSpecular());
+			glMaterialfv(GL_FRONT, GL_AMBIENT, mtl->getAmbient());
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, mtl->getDiffuse());
+			glMaterialf(GL_FRONT, GL_SHININESS, mtl->getShininess());
+			
+			if(mtl->hasText()){
+				glBindTexture(GL_TEXTURE_2D, mtl->getID());
+			}
+			
 		}
+		
+		glBegin(glMode);	
 		
 		for(Face* f : g->getFaces()){
 		

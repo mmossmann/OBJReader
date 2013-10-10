@@ -15,14 +15,14 @@ class Mesh{
 		vector<Vertex> verts;
 		vector<Vertex> norms;
 		vector<Texts> texts;
-		map<string, Material> mats;
+		map<string, Material*> mats;
 
 	public:
 		void addGroup(Group* newGroup);
 		void addVerts(Vertex newV);
 		void addNorms(Vertex newN);
 		void addTexts(Texts newT);
-		void addMats(Material newM);
+		void addMats(Material* newM);
 		void render(void);
 
 		Group* getGroupAt(int i);
@@ -30,6 +30,6 @@ class Mesh{
 		vector<Vertex> getVerts(void);
 		vector<Vertex> getNorms(void);
 		vector<Texts> getTexts(void);
-		map<string, Material> getMats(void);
-		Material getMtl(string name);
+		map<string, Material*> getMats(void);
+		Material* getMtl(string name);
 };

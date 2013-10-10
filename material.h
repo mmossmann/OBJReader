@@ -7,8 +7,15 @@ class Material{
 		float ambient[4];
 		float specular[4];
 		float shininess;
+		std::string textName;
+		int id;
 	
 	public:
+		
+		static int textCount;
+		
+		static int getTextCount(void);
+	
 		Material(){}
 		Material(std::string n);
 	
@@ -17,9 +24,16 @@ class Material{
 		float* getAmbient(void);
 		float* getSpecular(void);
 		float getShininess(void);
+		int getID(void);
+		std::string getTextName(void);
 		
 		void setDiffuse(float r, float g, float b);
 		void setAmbient(float r, float g, float b);
 		void setSpecular(float r, float g, float b);
 		void setShininess(float n);
+		void setTextName(std::string tn);
+		void setD(float d);
+		void setID(int i);
+		
+		bool hasText(void);
 };
