@@ -14,6 +14,7 @@ class Group{
 		Group();
 		Group(string n);
 		vector<Face*> getFaces(void);
+		string getName(void);
 		string getMtl(void);
 		bool getVisible(void);
 

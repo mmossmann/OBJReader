@@ -72,7 +72,7 @@ void Image::loadPPM(const char* src)
 			for (int j = 0; j < cols; j++)
 			{
 				in >> r >> g >> b;
-				rgb = (r << 16) | (g << 8) | b;
+				rgb = (r << 16) | (g << 8) | b | (255 << 24);
 
 				setPixel(rgb, j, height - i - 1);
 			}

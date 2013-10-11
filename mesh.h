@@ -23,7 +23,8 @@ class Mesh{
 		void addNorms(Vertex newN);
 		void addTexts(Texts newT);
 		void addMats(Material* newM);
-		void render(void);
+		void render(int renderMode);
+		
 
 		Group* getGroupAt(int i);
 		vector<Group*> getGroups(void);

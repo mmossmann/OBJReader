@@ -18,7 +18,7 @@ void Mesh::addTexts(Texts newT){
 
 void Mesh::addMats(Material* newM){
 	string name = newM->getName();
-	if(name.size()){
+	if(!name.empty()){
 		mats[name] = newM;
 	}
 }
@@ -51,7 +51,7 @@ Material* Mesh::getMtl(string name){
 	return mats[name];
 }
 
-void Mesh::render(void){
+void Mesh::render(int renderMode){
 
 	glColor3f(1.0, 1.0, 1.0);
 	
@@ -59,13 +59,18 @@ void Mesh::render(void){
 	int oldSides = 3;
 	
 	int name = 0;
+	int currentID = 0;
+	glBindTexture(GL_TEXTURE_2D, currentID);
 	
 	for(Group* g : groups){	
 	
-		glLoadName(name++);
+		if(renderMode == GL_SELECT){
+			glLoadName(name++);
+		}
 		
-		if(!g->getVisible())
+		if(!g->getVisible()){
 			continue;
+		}
 		
 		string mtlName = g->getMtl();
 		
@@ -76,8 +81,11 @@ void Mesh::render(void){
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, mtl->getDiffuse());
 			glMaterialf(GL_FRONT, GL_SHININESS, mtl->getShininess());
 			
-			if(mtl->hasText()){
-				glBindTexture(GL_TEXTURE_2D, mtl->getID());
+			
+			int tID = mtl->getID();
+			if(tID != currentID){
+				currentID = tID;
+				glBindTexture(GL_TEXTURE_2D, currentID);
 			}
 			
 		}
@@ -103,15 +111,13 @@ void Mesh::render(void){
 			}	
 			
 			for(int x = 0; x < nv; ++x){
-				//*
 				if(hasNorm) {
 					glNormal3fv(norms[n[x]].getCoords());
 				}
 				if(hasText){
 					glTexCoord2fv(texts[t[x]].getCoords());
 				}
-				glVertex3fv(verts[v[x]].getCoords());/**/
-				//glArrayElement(v[x]);
+				glVertex3fv(verts[v[x]].getCoords());
 			}
 			
 			if(glMode == GL_POLYGON){
@@ -119,7 +125,6 @@ void Mesh::render(void){
 				glBegin(GL_POLYGON);
 			}	
 		}
-		//glPopName();
 		glEnd();
 	}
 }

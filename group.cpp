@@ -14,6 +14,10 @@ vector<Face*> Group::getFaces(void){
 	return faces;
 }
 
+string Group::getName(void){
+	return name;
+}
+
 string Group::getMtl(void){
 	return mtl;
 }

@@ -1,6 +1,6 @@
 #include <Windows.h> 
 #include "camera.h"
-#include "Reader.h"
+#include "reader.h"
 #include <stdio.h> 
 #include <string.h>
 #include <utility>
@@ -21,17 +21,19 @@ Mesh* mesh;
 
 Camera* camera;
 
-unsigned int* ids;
-
 int currentTime, frames = 0, timebase;
 
 char s[20];
 
+unsigned int* ids;
+
 void loadOBJ(const char* s){
 	mesh = new Mesh();
+	Material::setTextCount(0);
 	Reader::readObj(s, mesh);	
 	
 	int textCount = Material::getTextCount();
+
 	ids = new unsigned int[textCount];
 	glGenTextures(textCount, ids);
 	int k = 0;
@@ -43,60 +45,33 @@ void loadOBJ(const char* s){
 			glBindTexture(GL_TEXTURE_2D, mtl->getID());
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img->getWidth(), img->getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, img->getPixels());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			// 0x80E1
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img->getWidth(), img->getHeight(), 0, 0x80E1, GL_UNSIGNED_BYTE, img->getPixels());
 			free(img->getPixels());
 		}
 	}
-	/*
-	glEnableClientState(GL_VERTEX_ARRAY);
-	Vertex* vx = new Vertex[mesh->getVerts().size()];
-	Vertex* vt = mesh->getVerts().data();
-	for(int x = 0; x < mesh->getVerts().size(); ++x){
-		vx[x] =  mesh->getVerts()[x];
-		if(vt[x].getCoords()[0] != vx[x].getCoords()[0] | vt[x].getCoords()[1] != vx[x].getCoords()[1] | vt[x].getCoords()[2] != vx[x].getCoords()[2]){
-			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[0]<<"\tFor: "<<vx[x].getCoords()[0]<<endl;
-			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[1]<<"\tFor: "<<vx[x].getCoords()[1]<<endl;
-			cout<<"X: "<<x<<"\tData: "<<vt[x].getCoords()[2]<<"\tFor: "<<vx[x].getCoords()[2]<<endl;
-		}
-	}
-	cout<<"Sizeof(vt) :"<<sizeof(*vt)<<endl;
-	cout<<"Sizeof(vx) :"<<sizeof(vx)<<endl;
-	cout<<"Sizeof(Vertex) :"<<sizeof(Vertex)<<endl;
-	cout<<"mesh->getVerts().size() :"<<mesh->getVerts().size()<<endl;
-	
-	glVertexPointer(3, GL_FLOAT, sizeof(Vertex), vx);
-	/**/
 }
 
 void processHits (GLint hits, GLuint buffer[])
 {
-   unsigned int i, j;
-   GLuint names, *ptr, minZ,*ptrNames, numberOfNames;
+   GLuint names, *ptr, minZ,*ptrNames;
 
-   printf ("hits = %d\n", hits);
    ptr = (GLuint *) buffer;
    minZ = 0xffffffff;
-   for (i = 0; i < hits; i++) {	
+   for (unsigned int i = 0; i < hits; i++) {	
       names = *ptr;
 	  ptr++;
 	  if (*ptr < minZ) {
-		  numberOfNames = names;
 		  minZ = *ptr;
 		  ptrNames = ptr+2;
 	  }
 	  
 	  ptr += names+2;
 	}
-  printf ("The closest hit names are ");
   ptr = ptrNames;
   mesh->getGroupAt(*ptr)->setVisible(false);
-  for (j = 0; j < numberOfNames; j++,ptr++) {
-     printf ("%d ", *ptr);
-  }
-  printf ("\n");
-  cout<<"Groups: "<<mesh->getGroups().size()<<endl;
    
 }
 
@@ -132,20 +107,9 @@ void display2d(const char* msg, float x, float y, float l_size, void* font){
 void drawScene(){ 
     // Clear the window with current clearing color 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
-
-
-	/*Floor
-	glColor3f(0, 0, 1);
-	glBegin(GL_QUADS);
-
-	glVertex3f(-50,-1,-50);
-	glVertex3f(50,-1,-50);
-	glVertex3f(50,-1,50);
-	glVertex3f(-50,-1,50);
-
-	glEnd();*/
 	
-	mesh->render();
+	
+	mesh->render(GL_RENDER);
 	
 	switch2D();
 	//Draw 2D stuff
@@ -235,6 +199,35 @@ void handleSpecialKey(int key, int x, int y){
 	}
 }
 
+int switchSelect(GLuint* selectBuf, int x, int y){
+	GLint viewport[4];
+
+	glGetIntegerv (GL_VIEWPORT, viewport);
+
+	glSelectBuffer(BUFSIZE, selectBuf);
+	glRenderMode(GL_SELECT);
+
+	glInitNames();
+	glPushName(0);
+
+	glMatrixMode (GL_PROJECTION);
+	glPushMatrix ();
+	glLoadIdentity ();
+	
+	gluPickMatrix ((GLdouble) x, (GLdouble) (viewport[3] - y), 
+				  5.0, 5.0, viewport);
+	gluPerspective(45.0, width / (double)height, 0.2, 500.0);
+
+	mesh->render(GL_SELECT);
+
+	glMatrixMode (GL_PROJECTION);
+	glPopMatrix ();
+	glFlush();
+
+	return glRenderMode (GL_RENDER);
+	
+}
+
 void passiveMotionFunc(int x, int y)
 {
 	float y2 = (height - y) / (float)height;
@@ -248,6 +241,7 @@ void passiveMotionFunc(int x, int y)
 		{
 			camera->changeAngle((x - width/2) / 10);
 		}
+		
 		glutWarpPointer(width/2, height/2);
 		glutPostRedisplay();
 	}
@@ -267,39 +261,17 @@ void handleResize(int w, int h) {
 void handleMouse(int button, int state, int x, int y){
 
 	if (button != GLUT_LEFT_BUTTON || state != GLUT_DOWN)
-      return;
+	  return;
 	  
-   GLuint selectBuf[BUFSIZE];
-   GLint hits;
-   GLint viewport[4];
-   
-	glGetIntegerv (GL_VIEWPORT, viewport);
+	GLuint selectBuf[BUFSIZE];
+	GLint hits;
 
-   glSelectBuffer(BUFSIZE, selectBuf);
-   glRenderMode(GL_SELECT);
+	hits = switchSelect(selectBuf, x, y);
 
-   glInitNames();
-   glPushName(0);
-
-   glMatrixMode (GL_PROJECTION);
-   glPushMatrix ();
-   glLoadIdentity ();
-/*  create 5x5 pixel picking region near cursor location      */
-   gluPickMatrix ((GLdouble) x, (GLdouble) (viewport[3] - y), 
-                  5.0, 5.0, viewport);
-	gluPerspective(45.0, width / (double)height, 0.2, 200.0);
-   // drawSquares (GL_SELECT);
-   
-   mesh->render();
-
-   glMatrixMode (GL_PROJECTION);
-   glPopMatrix ();
-   glFlush ();
-
-   hits = glRenderMode (GL_RENDER);
 	if (hits != 0)
 		processHits(hits,selectBuf);
-   glutPostRedisplay();
+		
+	glutPostRedisplay();
 }
   
 void init() { 
@@ -311,6 +283,7 @@ void init() {
 	glEnable(GL_LIGHTING);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_TEXTURE_2D);
+	// glEnable(GL_COLOR_MATERIAL);
     
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glCullFace(GL_BACK);
@@ -319,7 +292,7 @@ void init() {
 
 
 	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
-	GLfloat light_specular[] = {1.0, 1.0, 0.0,1.0};
+	GLfloat light_specular[] = {1.0, 1.0, 1.0,1.0};
 	GLfloat light_diffuse[] = {1.0, 1.0, 1.0,1.0};
 
 	glShadeModel (GL_SMOOTH);
@@ -333,8 +306,6 @@ void init() {
 	camera->resetView(width, height);
 	
 	loadOBJ("exemplosOBJ\\bicicleta.obj");
-	// Image* img = Reader::readPpm("exemplosOBJ\\Map__26_Falloff.ppm");
-	// glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img->getWidth(), img->getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, img->getPixels());
 	
 	timebase = glutGet(GLUT_ELAPSED_TIME);
 

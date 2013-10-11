@@ -15,7 +15,7 @@ class Reader
 	public:
 		static void readObj(const char* name, Mesh* m);
 		static bool readMtl(const char* s, Mesh* m);
-		static Image* readPpm(const char* s);
+		static Image* readPpm(string s);
 		Group* searchForExistingGroup(string name);
 
 };

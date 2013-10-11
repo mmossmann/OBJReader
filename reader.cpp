@@ -10,8 +10,8 @@ void Reader::readObj(const char* name, Mesh* m){
 
 	Group* g = new Group();
 	m->addGroup(g);
-	Face* f;
 	Vertex v;
+	Face* f;
 	Texts t;
 	string mtl;
 	
@@ -131,7 +131,7 @@ bool Reader::readMtl(const char* s, Mesh* m){
 
 
 	string path(s);
-	path = path.substr(0, path.rfind('\\')) + '\\';
+	string path2 = path.substr(0, path.find_last_of("/\\")) + '\\';
 	
 	while(!in.eof()){
 	
@@ -179,7 +179,7 @@ bool Reader::readMtl(const char* s, Mesh* m){
 				
 			case 'M':
 			case 'm':					
-				mtl->setTextName(path + tokens[1]);
+				mtl->setTextName(path2 + tokens[1]);
 				break;
 				
 			case 'D':
@@ -187,17 +187,15 @@ bool Reader::readMtl(const char* s, Mesh* m){
 				mtl->setD(atof(tokens[1].c_str()));
 				break;
 		}
-	}
-	m->addMats(mtl);
-	
+	}	
 	in.close();
 	
 	return true;
 }
 
-Image* Reader::readPpm(const char* s){
+Image* Reader::readPpm(string s){
 	Image* img = new Image();
-	img->loadPPM(s);
+	img->loadPPM(s.c_str());
 	return img;
 }
 

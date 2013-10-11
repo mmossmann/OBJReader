@@ -7,10 +7,16 @@ int Material::textCount = 0;
 
 Material::Material(std::string n){
 	name = n;
+	textName = "";
+	id = 0;
 }
 
 int Material::getTextCount(void){
 	return textCount;
+}
+
+void Material::setTextCount(int count){
+	textCount = count;
 }
 
 std::string Material::getName(void){
@@ -82,8 +88,10 @@ void Material::setD(float d){
 }
 
 void Material::setTextName(std::string tn){
+	if(textName.empty()){
+		textCount++;
+	}
 	textName = tn;
-	textCount++;
 }
 
 void Material::setID(int i){

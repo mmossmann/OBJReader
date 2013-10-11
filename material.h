@@ -15,6 +15,7 @@ class Material{
 		static int textCount;
 		
 		static int getTextCount(void);
+		static void setTextCount(int count);
 	
 		Material(){}
 		Material(std::string n);
